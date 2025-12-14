@@ -27,7 +27,7 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
-  const createCart = useCallback(async () => {
+  const createCart = useCallback(async (): Promise<{ cartId: string; cartToken: string } | null> => {
     try {
       const res = await fetch('/api/shop/cart', { method: 'POST' });
       if (!res.ok) {
@@ -36,13 +36,13 @@ export default function ShopPage() {
       }
       const data = await res.json();
       setCartId(data.cart_id);
-      setCartToken(data.cart_token);
+      setCartToken(data.cart_token || '');
       setCartItems([]);
-      return true;
+      return data.cart_token ? { cartId: data.cart_id, cartToken: data.cart_token } : null;
     } catch (error) {
       console.error('Cart error:', error);
       setMessage('Failed to create cart. Please refresh the page.');
-      return false;
+      return null;
     }
   }, []);
 
@@ -53,6 +53,15 @@ export default function ShopPage() {
       setInitializing(false);
     }
     init();
+
+    // Recreate cart when page becomes visible (handles back button)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        createCart();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [createCart]);
 
   async function fetchCatalog() {
@@ -72,16 +81,25 @@ export default function ShopPage() {
   }
 
   async function addToCart(sku: string) {
-    if (!cartId || !cartToken) {
-      setMessage('Cart not ready. Please refresh the page.');
-      return;
+    let currentCartId = cartId;
+    let currentCartToken = cartToken;
+
+    // If no cart token, try to create a new cart first
+    if (!currentCartToken) {
+      const newCart = await createCart();
+      if (!newCart) {
+        setMessage('Cart session expired. Please refresh the page.');
+        return;
+      }
+      currentCartId = newCart.cartId;
+      currentCartToken = newCart.cartToken;
     }
 
     try {
-      const res = await fetch(`/api/shop/cart/${cartId}/add`, {
+      const res = await fetch(`/api/shop/cart/${currentCartId}/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku, qty: 1, cart_token: cartToken })
+        body: JSON.stringify({ sku, qty: 1, cart_token: currentCartToken })
       });
 
       const data = await res.json();
