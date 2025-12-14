@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import CopyButton from '../components/CopyButton';
 
@@ -20,72 +20,91 @@ type CartItem = {
 export default function ShopPage() {
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [cartId, setCartId] = useState<string>('');
+  const [cartToken, setCartToken] = useState<string>('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [receipt, setReceipt] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+
+  const createCart = useCallback(async () => {
+    try {
+      const res = await fetch('/api/shop/cart', { method: 'POST' });
+      if (!res.ok) {
+        console.error('Cart creation failed:', res.status, res.statusText);
+        throw new Error('Failed to create cart');
+      }
+      const data = await res.json();
+      setCartId(data.cart_id);
+      setCartToken(data.cart_token);
+      setCartItems([]);
+      return true;
+    } catch (error) {
+      console.error('Cart error:', error);
+      setMessage('Failed to create cart. Please refresh the page.');
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
-    fetchCatalog();
-    createCart();
-  }, []);
+    async function init() {
+      setInitializing(true);
+      await Promise.all([fetchCatalog(), createCart()]);
+      setInitializing(false);
+    }
+    init();
+  }, [createCart]);
 
   async function fetchCatalog() {
     try {
-      console.log('Fetching catalog...');
       const res = await fetch('/api/shop/catalog');
-      console.log('Catalog response:', res.status, res.ok);
       if (!res.ok) {
         console.error('Catalog fetch failed:', res.status, res.statusText);
         setMessage(`Failed to load catalog: ${res.status}`);
         return;
       }
       const data = await res.json();
-      console.log('Catalog data:', data);
       setCatalog(data.items || []);
-      console.log('Catalog set:', data.items?.length, 'items');
     } catch (error) {
       console.error('Catalog error:', error);
       setMessage('Failed to load catalog');
     }
   }
 
-  async function createCart() {
-    try {
-      const res = await fetch('/api/shop/cart', { method: 'POST' });
-      if (!res.ok) {
-        console.error('Cart creation failed:', res.status, res.statusText);
-        return;
-      }
-      const data = await res.json();
-      setCartId(data.cart_id);
-    } catch (error) {
-      console.error('Cart error:', error);
-    }
-  }
-
   async function addToCart(sku: string) {
-    if (!cartId) return;
+    if (!cartId || !cartToken) {
+      setMessage('Cart not ready. Please refresh the page.');
+      return;
+    }
 
-    const res = await fetch(`/api/shop/cart/${cartId}/add`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sku, qty: 1 })
-    });
+    try {
+      const res = await fetch(`/api/shop/cart/${cartId}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, qty: 1, cart_token: cartToken })
+      });
 
-    const data = await res.json();
-    if (data.items) {
-      setCartItems(data.items);
-      setMessage('Added to cart!');
-      setTimeout(() => setMessage(''), 2000);
-    } else {
-      console.error('Unexpected response:', data);
+      const data = await res.json();
+      if (data.items && data.cart_token) {
+        setCartItems(data.items);
+        setCartToken(data.cart_token);
+        setMessage('Added to cart!');
+        setTimeout(() => setMessage(''), 2000);
+      } else if (data.error) {
+        console.error('Add to cart error:', data);
+        setMessage(`Error: ${data.message || data.error}`);
+      }
+    } catch (error) {
+      console.error('Add to cart error:', error);
       setMessage('Error adding to cart');
     }
   }
 
   async function checkout() {
-    if (!cartId) return;
+    if (!cartId || !cartToken) {
+      setMessage('Cart not ready. Please refresh the page.');
+      return;
+    }
     setLoading(true);
     setMessage('');
 
@@ -93,7 +112,7 @@ export default function ShopPage() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart_id: cartId })
+        body: JSON.stringify({ cart_id: cartId, cart_token: cartToken })
       });
 
       const data = await res.json();
@@ -109,7 +128,7 @@ export default function ShopPage() {
               'X-402-Proof': 'demo-pay-ok-123',
               'X-402-Session': data.session_token
             },
-            body: JSON.stringify({ cart_id: cartId })
+            body: JSON.stringify({ cart_id: cartId, cart_token: cartToken })
           });
 
           if (paidRes.ok) {
@@ -122,10 +141,14 @@ export default function ShopPage() {
 
             await createCart();
           } else {
-            setMessage('Payment verification failed');
+            const errorData = await paidRes.json().catch(() => ({}));
+            setMessage(`Payment verification failed: ${errorData.message || 'Unknown error'}`);
           }
           setLoading(false);
         }, 1000);
+      } else if (data.error) {
+        setMessage(`Checkout failed: ${data.message || data.error}`);
+        setLoading(false);
       } else {
         setMessage('Checkout failed');
         setLoading(false);
@@ -185,11 +208,12 @@ export default function ShopPage() {
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => addToCart(product.sku)}
                     className="btn-primary"
-                    disabled={!cartId}
+                    disabled={!cartId || !cartToken || initializing}
                   >
-                    Add to Cart
+                    {initializing ? 'Loading...' : 'Add to Cart'}
                   </button>
                 </div>
               ))}
@@ -226,8 +250,9 @@ export default function ShopPage() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={checkout}
-                    disabled={loading || cartItems.length === 0}
+                    disabled={loading || cartItems.length === 0 || !cartToken}
                     className="w-full btn-primary disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none text-base py-3"
                   >
                     {loading ? 'Processing...' : 'Checkout with x402'}
@@ -256,6 +281,7 @@ export default function ShopPage() {
             <textarea
               readOnly
               value={receipt}
+              aria-label="PEAC Receipt JWS token"
               className="w-full h-32 p-4 font-mono text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand"
             />
             <div className="mt-6 flex gap-4">

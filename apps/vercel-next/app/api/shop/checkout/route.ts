@@ -1,12 +1,13 @@
 // app/api/shop/checkout/route.ts
 import { NextRequest } from 'next/server';
 import { nanoid } from 'nanoid';
-import { getCart, calculateCartTotal } from '@/lib/catalog';
+import { getProduct } from '@/lib/catalog';
 import {
   signSessionToken,
   verifySessionToken,
   signPeacReceipt,
   verifyX402Proof,
+  verifyCartToken,
   nowIso,
   type PeacReceiptPayload
 } from '@/lib/peac';
@@ -20,7 +21,7 @@ const CURRENCY = process.env.X402_CURRENCY || 'USDC';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { cart_id } = body || {};
+    const { cart_id, cart_token } = body || {};
 
     if (!cart_id) {
       return Response.json(
@@ -29,16 +30,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cart = getCart(cart_id);
-    if (!cart || !cart.items || cart.items.length === 0) {
+    if (!cart_token) {
       return Response.json(
-        { error: 'empty_cart', message: 'Cart is empty or not found' },
+        { error: 'missing_cart_token', message: 'Cart token required for checkout' },
         { status: 400 }
       );
     }
 
-    // Calculate totals
-    const { items, subtotal, tax, fees, grand_total } = calculateCartTotal(cart);
+    // Verify cart token (stateless cart)
+    let cartData;
+    try {
+      cartData = await verifyCartToken(cart_token);
+    } catch {
+      return Response.json(
+        { error: 'invalid_cart_token', message: 'Cart token verification failed' },
+        { status: 400 }
+      );
+    }
+
+    if (cartData.cart_id !== cart_id) {
+      return Response.json(
+        { error: 'cart_id_mismatch', message: 'Cart ID does not match token' },
+        { status: 400 }
+      );
+    }
+
+    if (!cartData.items || cartData.items.length === 0) {
+      return Response.json(
+        { error: 'empty_cart', message: 'Cart is empty' },
+        { status: 400 }
+      );
+    }
+
+    // Calculate totals from cart token data
+    const items = cartData.items.map(item => {
+      const product = getProduct(item.sku);
+      return {
+        sku: item.sku,
+        qty: item.qty,
+        unit_price_usd: product?.price_usd || 0
+      };
+    });
+
+    const subtotal = Number(
+      items.reduce((sum, item) => sum + item.qty * item.unit_price_usd, 0).toFixed(2)
+    );
+    const tax = 0;
+    const fees = 0;
+    const grand_total = subtotal;
 
     // Check for payment proof
     const proof_id = request.headers.get('x-402-proof');

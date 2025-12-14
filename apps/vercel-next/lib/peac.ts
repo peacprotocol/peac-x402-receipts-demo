@@ -107,6 +107,28 @@ export async function verifySessionToken(jws: string): Promise<SessionToken> {
   return payload as SessionToken;
 }
 
+// Stateless cart token (serverless-friendly)
+export type CartToken = {
+  cart_id: string;
+  items: Array<{ sku: string; qty: number }>;
+  created_at: string;
+};
+
+export async function signCartToken(cart: CartToken): Promise<string> {
+  const signer = await getSigner();
+  return await new SignJWT(cart as Record<string, unknown>)
+    .setProtectedHeader({ alg: 'EdDSA', kid: getKid(), typ: 'peac-cart+jws' })
+    .sign(signer);
+}
+
+export async function verifyCartToken(jws: string): Promise<CartToken> {
+  const pub = getPublicJWK();
+  const { payload } = await jwtVerify(jws, await importJWK(pub, 'EdDSA'), {
+    algorithms: ['EdDSA']
+  });
+  return payload as unknown as CartToken;
+}
+
 export async function verifyX402Proof(proof_id: string, session_id: string): Promise<{
   valid: boolean;
   payer?: string;
