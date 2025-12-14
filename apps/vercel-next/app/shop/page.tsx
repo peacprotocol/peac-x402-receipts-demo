@@ -136,7 +136,7 @@ export default function ShopPage() {
             const order = await paidRes.json();
 
             setReceipt(receiptJws || '');
-            setMessage(`Order ${order.order_id} complete! Receipt received.`);
+            setMessage(`Order ${order.order_id} complete! Add items to start a new order.`);
             setCartItems([]);
 
             await createCart();
@@ -185,7 +185,14 @@ export default function ShopPage() {
         </div>
 
         {message && (
-          <div className="max-w-4xl mx-auto mb-6 card p-4 text-center font-semibold text-gray-900 border-brand/20">
+          <div className={`max-w-4xl mx-auto mb-6 card p-4 text-center font-semibold ${
+            message.includes('complete')
+              ? 'bg-green-50 border-green-200 text-green-700'
+              : message.includes('Error') || message.includes('failed')
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'text-gray-900 border-brand/20'
+          }`}>
+            {message.includes('complete') && <span className="mr-2">✓</span>}
             {message}
           </div>
         )}
@@ -226,7 +233,15 @@ export default function ShopPage() {
             </h2>
 
             {cartItems.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Cart is empty</p>
+              receipt ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-3">✓</div>
+                  <p className="text-green-600 font-semibold text-lg">Order Complete!</p>
+                  <p className="text-gray-500 text-sm mt-2">Add more items to start a new order</p>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">Cart is empty</p>
+              )
             ) : (
               <>
                 <div className="space-y-3 mb-6">
