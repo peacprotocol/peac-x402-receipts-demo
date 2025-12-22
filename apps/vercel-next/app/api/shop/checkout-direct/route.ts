@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     const aiprefSnapshot = await aiprefResponse.json();
 
     const receiptPayload: PeacReceiptPayload = {
-      receipt_version: '0.9.14',
+      receipt_version: '0.9.18',
       issued_at: nowIso(),
       subject: 'order',
       request: {

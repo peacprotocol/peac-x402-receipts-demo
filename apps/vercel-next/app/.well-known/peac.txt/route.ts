@@ -6,7 +6,7 @@ export async function GET() {
   const kid = process.env.PEAC_KID || 'peac-demo-key-1';
 
   const lines = [
-    '# ≤20 lines, dev-phase: v0.9.14',
+    '# ≤20 lines, dev-phase: v0.9.18',
     'preferences: /aipref.json',
     'access_control: http-402',
     'payments: [x402]',

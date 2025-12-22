@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     // Create PEAC receipt
     const receiptPayload: PeacReceiptPayload = {
-      receipt_version: '0.9.14',
+      receipt_version: '0.9.18',
       issued_at: nowIso(),
       subject: 'order',
       request: {

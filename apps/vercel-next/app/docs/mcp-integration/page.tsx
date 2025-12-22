@@ -160,7 +160,7 @@ Content-Type: application/json
                 Create <code className="bg-gray-100 px-2 py-1 rounded">/.well-known/peac.txt</code> (≤20 lines) to advertise your capabilities:
               </p>
               <div className="code-block mb-6">
-                <pre className="text-sm">{`# ≤20 lines, dev-phase: v0.9.11
+                <pre className="text-sm">{`# ≤20 lines, dev-phase: v0.9.18
 
 preferences: /aipref.json
 access_control: http-402
@@ -211,7 +211,7 @@ Content-Type: application/json
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-gray-900 mb-2">Receipt Payload Must Include</h4>
                 <ul className="text-sm text-gray-700 space-y-2">
-                  <li><code className="bg-gray-100 px-2 py-1 rounded">receipt_version</code> - e.g., &quot;0.9.14&quot;</li>
+                  <li><code className="bg-gray-100 px-2 py-1 rounded">receipt_version</code> - e.g., &quot;0.9.18&quot;</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">issued_at</code> - ISO 8601 timestamp</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">subject</code> - e.g., &quot;order&quot;, &quot;article&quot;</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">payment.proof_id</code> - x402 proof identifier</li>

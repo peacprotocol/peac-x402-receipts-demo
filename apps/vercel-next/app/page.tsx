@@ -412,7 +412,7 @@ export default function Home() {
             </a>
           </div>
           <p className="text-sm mb-4">
-            PEAC Protocol v0.9.14 · Demo amounts: $0.01-$0.05 USDC on Base
+            PEAC Protocol v0.9.18 · Demo amounts: $0.01-$0.05 USDC on Base
           </p>
           <p className="text-xs text-gray-400 max-w-2xl mx-auto leading-relaxed">
             <a
