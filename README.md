@@ -52,7 +52,7 @@ README.md
 
 ```json
 {
-  "receipt_version": "0.9.14",
+  "receipt_version": "0.9.27",
   "issued_at": "2025-01-15T12:00:00Z",
   "subject": "order",
   "request": {"method": "POST", "path": "/api/shop/checkout"},
@@ -131,10 +131,11 @@ See [apps/vercel-next/README.md](apps/vercel-next/README.md) for deployment inst
 
 ## Specification
 
-- **PEAC Protocol**: v0.9.14 (dev-phase)
-- **Payment Rail**: x402 (HTTP 402 + on-chain verification)
+- **PEAC Protocol**: v0.9.27
+- **Payment Rail**: x402 v2 (HTTP 402 + on-chain verification)
 - **Signature**: EdDSA (Ed25519)
 - **Receipt Format**: JWS (JSON Web Signature)
+- **x402 Extension**: `extensions.peac-receipts` for receipt discovery
 
 ## Resources
 
