@@ -6,9 +6,14 @@ export default function Home() {
     <div className="min-h-screen">
       <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-gray-900 font-bold text-xl">
+          <a
+            href="https://peacprotocol.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-900 font-bold text-xl hover:text-brand transition-colors"
+          >
             PEAC × x402
-          </div>
+          </a>
           <div className="flex gap-6 items-center">
             <Link
               href="/.well-known/peac.txt"
