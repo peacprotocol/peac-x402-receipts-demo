@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
 
     grandTotal = Number(grandTotal.toFixed(2));
 
+    // MCP convenience headers (non-canonical, for agent tooling)
+    // Standard x402 v2 uses Payment-Required/Payment-Signature/Payment-Response headers
     const proofId = request.headers.get('x-402-proof');
     const sessionToken = request.headers.get('x-402-session');
     const idempotencyKey = request.headers.get('idempotency-key');
@@ -84,6 +86,31 @@ export async function POST(request: NextRequest) {
       };
 
       const signedSession = await signSessionToken(session);
+
+      // x402 v2 PaymentRequired object (canonical format)
+      const paymentRequired = {
+        x402Version: 2,
+        accepts: [{
+          scheme: 'exact',
+          network: CHAIN === 'base' ? 'eip155:8453' : `eip155:${CHAIN}`,
+          amount: String(Math.round(grandTotal * 1_000_000)), // USDC has 6 decimals
+          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+          payTo: process.env.X402_RECIPIENT || '0x0000000000000000000000000000000000000000',
+          maxTimeoutSeconds: 300
+        }],
+        resource: {
+          url: `${getPublicOrigin()}/api/shop/checkout-direct`,
+          description: 'PEAC x402 Demo Checkout'
+        },
+        extensions: {
+          'peac-receipts': {
+            version: '0.9.27',
+            receiptHeader: 'PEAC-Receipt',
+            issuer: getPublicOrigin(),
+            jwksUri: `${getPublicOrigin()}/.well-known/jwks.json`
+          }
+        }
+      };
 
       return Response.json(
         {
@@ -104,7 +131,10 @@ export async function POST(request: NextRequest) {
         {
           status: 402,
           headers: {
-            'Cache-Control': 'no-store'
+            'Cache-Control': 'no-store',
+            // Standard x402 v2 header (base64-encoded PaymentRequired)
+            'Payment-Required': Buffer.from(JSON.stringify(paymentRequired)).toString('base64'),
+            'Access-Control-Expose-Headers': 'Payment-Required'
           }
         }
       );
@@ -192,7 +222,7 @@ export async function POST(request: NextRequest) {
     const aiprefSnapshot = await aiprefResponse.json();
 
     const receiptPayload: PeacReceiptPayload = {
-      receipt_version: '0.9.18',
+      receipt_version: '0.9.27',
       issued_at: nowIso(),
       subject: 'order',
       request: {

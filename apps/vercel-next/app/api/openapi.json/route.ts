@@ -6,7 +6,7 @@ export async function GET() {
     openapi: '3.0.1',
     info: {
       title: 'PEAC x402 Demo API',
-      version: '0.9.18',
+      version: '0.9.27',
       description: 'Agent-to-agent commerce with HTTP 402 payments and cryptographic receipts'
     },
     servers: [

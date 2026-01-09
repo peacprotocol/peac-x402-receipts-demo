@@ -36,6 +36,24 @@ export default function McpIntegrationPage() {
               </p>
             </div>
 
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-6 mb-8 rounded-r-lg">
+              <p className="text-lg font-semibold text-amber-900 mb-2">
+                MCP Convenience Headers vs Pure x402 v2
+              </p>
+              <p className="text-gray-700 mb-3">
+                This demo uses <strong>MCP convenience headers</strong> (<code className="bg-amber-100 px-1 rounded">X-402-Session</code>, <code className="bg-amber-100 px-1 rounded">X-402-Proof</code>)
+                for simpler agent integration. These are <em>in addition to</em> the standard x402 v2 flow.
+              </p>
+              <p className="text-gray-700 mb-3">
+                <strong>Pure x402 v2 clients</strong> can use the standard <code className="bg-amber-100 px-1 rounded">Payment-Required</code> header
+                (base64-encoded) which is also present in the 402 response. PEAC advertises receipt capability via
+                the <code className="bg-amber-100 px-1 rounded">extensions.peac-receipts</code> field.
+              </p>
+              <p className="text-sm text-amber-800">
+                Any standard x402 client can pay unchanged - the PEAC-Receipt header on success is optional/additive.
+              </p>
+            </div>
+
             {/* For Agents Section */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-brand">
@@ -160,7 +178,7 @@ Content-Type: application/json
                 Create <code className="bg-gray-100 px-2 py-1 rounded">/.well-known/peac.txt</code> (≤20 lines) to advertise your capabilities:
               </p>
               <div className="code-block mb-6">
-                <pre className="text-sm">{`# ≤20 lines, dev-phase: v0.9.18
+                <pre className="text-sm">{`# ≤20 lines, dev-phase: v0.9.27
 
 preferences: /aipref.json
 access_control: http-402
@@ -211,7 +229,7 @@ Content-Type: application/json
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-gray-900 mb-2">Receipt Payload Must Include</h4>
                 <ul className="text-sm text-gray-700 space-y-2">
-                  <li><code className="bg-gray-100 px-2 py-1 rounded">receipt_version</code> - e.g., &quot;0.9.18&quot;</li>
+                  <li><code className="bg-gray-100 px-2 py-1 rounded">receipt_version</code> - e.g., &quot;0.9.27&quot;</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">issued_at</code> - ISO 8601 timestamp</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">subject</code> - e.g., &quot;order&quot;, &quot;article&quot;</li>
                   <li><code className="bg-gray-100 px-2 py-1 rounded">payment.proof_id</code> - x402 proof identifier</li>
